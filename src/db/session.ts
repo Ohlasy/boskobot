@@ -7,9 +7,7 @@ import {
 } from "typescript-json-decoder";
 import { getTableById, logErrorAndReturnNull } from "./shared";
 
-const table = () => getTableById("tbl1FyksMUFTYj1uk");
-
-export const defaultModelId = "recDdQrpb7l8F7esJ";
+const table = () => getTableById("tbl5YdLoz1KeQ056h");
 
 export type Session = decodeType<typeof decodeSession>;
 export const decodeSession = record({
@@ -47,7 +45,6 @@ export const createSession = (
       "Session ID": session.sessionId,
       "Last Response ID": session.lastResponseId,
       "Slack Link": session.slackLink,
-      "Model": [defaultModelId],
     })
     .then((record) => record.fields)
     .then(decodeSession)
