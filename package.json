@@ -10,6 +10,8 @@
     "test": "glob -c 'tsx --test' 'src/**/*.test.ts'"
   },
   "dependencies": {
+    "@slack/web-api": "^7.9.3",
+    "@vercel/functions": "^2.2.2",
     "next": "15.3.4",
     "openai": "^5.5.1",
     "react": "^19.0.0",
