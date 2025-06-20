@@ -12,6 +12,7 @@
   "dependencies": {
     "@slack/web-api": "^7.9.3",
     "@vercel/functions": "^2.2.2",
+    "airtable": "^0.12.2",
     "next": "15.3.4",
     "openai": "^5.5.1",
     "react": "^19.0.0",
@@ -29,5 +30,8 @@
     "glob": "^11.0.3",
     "tsx": "^4.20.3",
     "typescript": "^5"
+  },
+  "prettier": {
+    "quoteProps": "consistent"
   }
 }

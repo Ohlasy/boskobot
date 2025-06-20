@@ -6,11 +6,16 @@ import {
 } from "@/src/slack/events";
 import { waitUntil } from "@vercel/functions";
 import { NextRequest } from "next/server";
-import { union } from "typescript-json-decoder";
+import { record, string, union } from "typescript-json-decoder";
 import path from "path";
 import { promises as fs } from "fs";
 import OpenAI from "openai";
 import { WebClient } from "@slack/web-api";
+import {
+  createSession,
+  getExistingSession,
+  saveSession,
+} from "@/src/db/session";
 
 export async function POST(request: NextRequest): Promise<Response> {
   const decodeIncomingMessage = union(
@@ -62,6 +67,19 @@ async function respondToMention(mention: AppMention) {
       timestamp: mention.ts,
     });
 
+  // Is this mention a part of an existing session?
+  const session = mention.thread_ts
+    ? await getExistingSession(mention.thread_ts)
+    : null;
+
+  if (session) {
+    console.log(
+      `Mention is a part of existing session ${session.sessionId}, last response ID ${session.lastResponseId}.`
+    );
+  } else {
+    console.log(`Previous session for this mention not found.`);
+  }
+
   const prompt = await fs.readFile(
     path.join(process.cwd(), "/app/prompt.txt"),
     "utf-8"
@@ -71,7 +89,7 @@ async function respondToMention(mention: AppMention) {
     model: "gpt-4.1",
     input: mention.text,
     instructions: prompt,
-    previous_response_id: undefined, // TBD
+    previous_response_id: session?.lastResponseId,
     tools: [
       {
         type: "file_search",
@@ -89,6 +107,32 @@ async function respondToMention(mention: AppMention) {
       text: response.error.message,
     });
     return;
+  }
+
+  // Save session
+  if (session) {
+    console.log(`Updating last response ID for session to ${response.id}.`);
+    await saveSession({ ...session, lastResponseId: response.id });
+  } else {
+    console.log(
+      `Creating new session with initial response ID ${response.id}.`
+    );
+    const permalink = await slack.chat
+      .getPermalink({
+        channel: mention.channel,
+        message_ts: mention.ts,
+      })
+      .then(record({ permalink: string }))
+      .then((response) => response.permalink)
+      .catch((e) => {
+        console.error(e);
+        return undefined;
+      });
+    await createSession({
+      sessionId: mention.thread_ts ?? mention.ts,
+      lastResponseId: response.id,
+      slackLink: permalink,
+    });
   }
 
   await stopSpinner();
